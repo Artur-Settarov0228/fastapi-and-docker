@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FastAPI User Management Dashboard — foydalanuvchilarni boshqarish paneli">
+    <title>UserHub — Foydalanuvchilar Paneli</title>
+    <link rel="stylesheet" href="/static/index.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <div class="bg-orb bg-orb--1"></div>
+        <div class="bg-orb bg-orb--2"></div>
+        <div class="bg-orb bg-orb--3"></div>
+    </div>
+    <div class="bg-grid"></div>
+
+    <div class="app-container">
+        <!-- Navbar -->
+        <nav class="navbar" id="navbar">
+            <a href="/" class="navbar__brand">
+                <div class="navbar__logo">U</div>
+                <span class="navbar__title">UserHub</span>
+            </a>
+            <div class="navbar__actions">
+                <button class="btn btn--ghost btn--sm" id="refresh-btn" onclick="loadUsers()">
+                    🔄 Yangilash
+                </button>
+                <button class="btn btn--primary btn--sm" id="add-user-btn" onclick="openAddModal()">
+                    ➕ Foydalanuvchi qo'shish
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero" id="hero">
+                <div class="hero__badge">
+                    <span class="hero__badge-dot"></span>
+                    API ulangan — Jonli ma'lumotlar
+                </div>
+                <h1 class="hero__title">
+                    Foydalanuvchilarni <br>
+                    <span class="hero__title-gradient">oson boshqaring</span>
+                </h1>
+                <p class="hero__subtitle">
+                    FastAPI + SQLAlchemy asosida qurilgan zamonaviy foydalanuvchi boshqaruv paneli. 
+                    Real-time API orqali ma'lumotlarni boshqaring.
+                </p>
+                <div class="hero__stats">
+                    <div class="hero__stat">
+                        <div class="hero__stat-value" id="stat-total">0</div>
+                        <div class="hero__stat-label">Jami foydalanuvchilar</div>
+                    </div>
+                    <div class="hero__stat">
+                        <div class="hero__stat-value" id="stat-locations">0</div>
+                        <div class="hero__stat-label">Shaharlar</div>
+                    </div>
+                    <div class="hero__stat">
+                        <div class="hero__stat-value" id="stat-api">v1</div>
+                        <div class="hero__stat-label">API versiya</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section class="section" id="users-section">
+                <div class="section__header">
+                    <h2 class="section__title">
+                        <span class="section__title-icon">👥</span>
+                        Foydalanuvchilar ro'yxati
+                    </h2>
+                    <div class="search-bar">
+                        <span class="search-bar__icon">🔍</span>
+                        <input 
+                            type="text" 
+                            class="search-bar__input" 
+                            id="search-input"
+                            placeholder="Ism, email yoki shahar bo'yicha qidirish..."
+                            oninput="filterUsers(this.value)"
+                        >
+                    </div>
+                </div>
+                <div class="cards-grid" id="users-grid">
+                    <!-- Loading skeletons -->
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>
+                ⚡ <a href="/docs" class="footer__link" target="_blank">API Docs (Swagger)</a> &bull; 
+                FastAPI + SQLAlchemy + Docker &bull; 
+                &copy; 2026 UserHub
+            </p>
+        </footer>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal">
+            <div class="modal__header">
+                <h3 class="modal__title">➕ Yangi foydalanuvchi</h3>
+                <button class="modal__close" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="modal__body">
+                <form id="add-user-form" onsubmit="handleAddUser(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="input-name">To'liq ism *</label>
+                        <input class="form-input" type="text" id="input-name" placeholder="Masalan: Artur Settarov" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="input-email">Email *</label>
+                        <input class="form-input" type="email" id="input-email" placeholder="masalan@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="input-phone">Telefon raqam</label>
+                        <input class="form-input" type="tel" id="input-phone" placeholder="+998 90 123 45 67">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="input-location">Manzil (shahar) *</label>
+                        <input class="form-input" type="text" id="input-location" placeholder="Masalan: Toshkent, O'zbekiston" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="input-role">Rol</label>
+                        <select class="form-input form-select" id="input-role">
+                            <option value="Foydalanuvchi">Foydalanuvchi</option>
+                            <option value="Moderator">Moderator</option>
+                            <option value="Administrator">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--ghost" onclick="closeAddModal()">Bekor qilish</button>
+                        <button type="submit" class="btn btn--primary" id="submit-btn">
+                            <span id="submit-text">Saqlash</span>
+                            <span id="submit-spinner" class="spinner" style="display:none;"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div class="modal-overlay" id="user-modal">
+        <div class="modal">
+            <div class="modal__header">
+                <h3 class="modal__title">Foydalanuvchi ma'lumotlari</h3>
+                <button class="modal__close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal__body" id="modal-body">
+                <!-- filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal modal--sm">
+            <div class="modal__header">
+                <h3 class="modal__title">⚠️ O'chirishni tasdiqlash</h3>
+                <button class="modal__close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal__body">
+                <p class="delete-confirm-text" id="delete-confirm-text"></p>
+                <div class="form-actions" style="margin-top: 20px;">
+                    <button class="btn btn--ghost" onclick="closeDeleteModal()">Yo'q, bekor qilish</button>
+                    <button class="btn btn--danger" id="confirm-delete-btn" onclick="confirmDelete()">Ha, o'chirish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
